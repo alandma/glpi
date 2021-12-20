@@ -1,0 +1,49 @@
+version: "3.7"
+
+services:
+
+  mariadb:
+    build: ./mariadb
+    restart: unless-stopped
+    volumes:
+      - mariadb-glpi-volume:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: glpi
+      MYSQL_USER: glpi-user
+      MYSQL_PASSWORD: glpi-pass
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      TZ: America/Sao_Paulo
+    ports:
+      - 3306:3306
+    networks:
+      - glpi-net
+
+  glpi:
+    build: ./glpi
+    restart: unless-stopped
+    volumes:
+      - glpi-volume-files:/var/www/html/files
+      - glpi-volume-plugins:/var/www/html/plugins
+    environment:
+      MARIADB_HOST: mariadb
+      MARIADB_PORT: 3306
+      MARIADB_DATABASE: glpi
+      MARIADB_USER: glpi-user
+      MARIADB_PASSWORD: glpi-pass
+      TZ: America/Sao_Paulo
+    depends_on:
+      - mariadb
+    ports:
+      - "80:80"
+    networks:
+      - glpi-net
+    command: ./wait-for -t 0 mariadb:3306 -- /glpi-entrypoint.sh
+
+volumes:
+  glpi-volume-files:
+  glpi-volume-plugins:
+  mariadb-glpi-volume:
+
+networks:
+  glpi-net:
+    driver: bridge
